@@ -75,8 +75,16 @@
     fetch('https://agrocast-backend-fe59.onrender.com/signals')
       .then(response => response.json())
       .then(data => {
-        const forecast = generateForecast(data.price, data.trend);
-        const news = data.news || defaultNews;
+let forecast;
+        if (data.forecast && data.forecast.length > 0) {
+          forecast = data.forecast.map(item => ({
+            date: item.Date || item.date,
+            forecast: item.Forecast_Soybeans || item.forecast || item.price
+          }));
+        } else {
+          forecast = generateForecast(data.price, data.trend);
+        }
+        const news = data.news && data.news.length > 0 ? data.news : defaultNews;
 
         // Summary
         document.getElementById('summary').innerHTML =
