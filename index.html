@@ -85,11 +85,13 @@ let forecast;
           forecast = generateForecast(data.price, data.trend);
         }
         const news = data.news && data.news.length > 0 ? data.news : defaultNews;
+    const price = typeof data.price === 'number' ? data.price : 0;
 
+            data.price = price;
         // Summary
         document.getElementById('summary').innerHTML =
           '<p class=\'text-lg\'>Soja: ' + data.price.toFixed(2) + ' USD/TN</p>' +
-          '<p class=\'text-sm\'>Tendencia: ' + getTrendIcon(data.trend) + '</p>';
+          '<p class=\'sm\'>Tendencia: ' getTrendIcon(data.trend) + '</p>';
 
         // Signal
         let signalHtml = '<h2 class=\'font-semibold mb-1\'>🚨 Señal</h2>';
