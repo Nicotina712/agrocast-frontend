@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AgroCast</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body class="p-6">
+  <div id="root"></div>
+  <script>
+    const { useState, useEffect } = React;
+
+    function AgroCastDashboard() {
+      const [data, setData] = useState(null);
+
+      useEffect(() => {
+        fetch('https://agrocast-backend-fe59.onrender.com/signals')
+          .then(res => res.json())
+          .then(setData)
+          .catch(console.error);
+      }, []);
+
+      if (!data) {
+        return React.createElement('div', null, 'Cargando...');
+      }
+
+      return React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', { className: 'flex justify-between items-center' },
+          React.createElement('h1', { className: 'text-2xl font-bold' }, '🌱 AgroCast'),
+          React.createElement('div', null,
+            React.createElement('p', { className: 'text-lg' }, `Soja: ${data.price} USD/TN`),
+            React.createElement('p', { className: 'text-sm' }, `Tendencia: ${data.trend === 'alcista' ? '🟢' : data.trend === 'bajista' ? '🔴' : '🟡'}`)
+          )
+        ),
+        React.createElement('div', { className: 'grid grid-cols-2 gap-6' },
+          // Gráfico (placeholder)
+          React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
+            React.createElement('h2', { className: 'font-semibold mb-2' }, '📊 Precio + Forecast'),
+            React.createElement('div', { className: 'h-64 flex items-center justify-center text-gray-400' }, '(gráfico acá)')
+          ),
+          // Señal
+          React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
+            React.createElement('h2', { className: 'font-semibold mb-2' }, '🚨 Señal'),
+            React.createElement('p', { className: 'text-xl font-bold' },
+              (data.signal === 'VENDER' && '🟢 ') ||
+              (data.signal === 'COMPRAR' && '🔴 ') ||
+              (data.signal === 'ESPERAR' && '🟡 '),
+              data.signal
+            ),
+            React.createElement('p', { className: 'text-sm mt-2' }, `Confianza: ${(data.confidence * 100).toFixed(0)}%`),
+            React.createElement('ul', { className: 'mt-3 text-sm list-disc ml-5' }, data.explanation.map((e, i) => React.createElement('li', { key: i }, e)))
+          )
+        ),
+        // Drivers
+        React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
+          React.createElement('h2', { className: 'font-semibold mb-2' }, '📈 Drivers'),
+          Object.entries(data.drivers).map(([k, v]) => (
+            React.createElement('div', { key: k, className: 'flex justify-between text-sm' },
+              React.createElement('span', null, k),
+              React.createElement('span', null, `${(v * 100).toFixed(0)}%`)
+            )
+          ))
+        )
+      );
+    }
+
+    ReactDOM.render(React.createElement(AgroCastDashboard), document.getElementById('root'));
+  </script>
+</body>
+</html>
