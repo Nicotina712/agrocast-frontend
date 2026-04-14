@@ -1,73 +1,149 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang='es'>
 <head>
-  <meta charset="UTF-8">
-  <title>AgroCast</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<meta charset='UTF-8'>
+<title>AgroCast</title>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<script src='https://cdn.tailwindcss.com'></script>
+<script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
+<script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
+<script src='https://unpkg.com/recharts/umd/Recharts.min.js'></script>
 </head>
-<body class="p-6">
-  <div id="root"></div>
-  <script>
-    const { useState, useEffect } = React;
+<body class='p-6'>
+<div id='root'></div>
+<script>
+const { useState, useEffect } = React;
+const { LineChart, Line, XAxis, YAxis, Tooltip, Legend } = Recharts;
 
-    function AgroCastDashboard() {
-      const [data, setData] = useState(null);
+function generateForecast(lastPrice, trend, drivers) {
+    const monthsHistory = 12;
+    const monthsForecast = 24;
+    const data = [];
+    const today = new Date();
+    // History
+    for (let i = monthsHistory; i > 0; i--) {
+        const date = new Date(today);
+        date.setMonth(date.getMonth() - i);
+        data.push({
+            date: date.toISOString().slice(0, 7),
+            price: lastPrice - i,
+            dolar: 100,
+            diesel: 200,
+            logistica: 180
+        });
+    }
+    // Forecast
+    let currentPrice = lastPrice;
+    const drift = trend === 'alcista' ? 1 : trend === 'bajista' ? -1 : 0;
+    for (let i = 1; i <= monthsForecast; i++) {
+        currentPrice += drift + (Math.random() * 2 - 1);
+        const date = new Date(today);
+        date.setMonth(date.getMonth() + i);
+        data.push({
+            date: date.toISOString().slice(0, 7),
+            price: currentPrice,
+            dolar: 100,
+            diesel: 200,
+            logistica: 180
+        });
+    }
+    return data;
+}
 
-      useEffect(() => {
+function AgroCastDashboard() {
+    const [data, setData] = useState(null);
+    const [showDolar, setShowDolar] = useState(false);
+    const [showDiesel, setShowDiesel] = useState(false);
+    const [showLogistica, setShowLogistica] = useState(false);
+
+    useEffect(() => {
         fetch('https://agrocast-backend-fe59.onrender.com/signals')
-          .then(res => res.json())
-          .then(setData)
-          .catch(console.error);
-      }, []);
+            .then(res => res.json())
+            .then(setData)
+            .catch(console.error);
+    }, []);
 
-      if (!data) {
+    if (!data) {
         return React.createElement('div', null, 'Cargando...');
-      }
-
-      return React.createElement('div', { className: 'space-y-6' },
-        React.createElement('div', { className: 'flex justify-between items-center' },
-          React.createElement('h1', { className: 'text-2xl font-bold' }, '🌱 AgroCast'),
-          React.createElement('div', null,
-            React.createElement('p', { className: 'text-lg' }, `Soja: ${data.price} USD/TN`),
-            React.createElement('p', { className: 'text-sm' }, `Tendencia: ${data.trend === 'alcista' ? '🟢' : data.trend === 'bajista' ? '🔴' : '🟡'}`)
-          )
-        ),
-        React.createElement('div', { className: 'grid grid-cols-2 gap-6' },
-          // Gráfico (placeholder)
-          React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
-            React.createElement('h2', { className: 'font-semibold mb-2' }, '📊 Precio + Forecast'),
-            React.createElement('div', { className: 'h-64 flex items-center justify-center text-gray-400' }, '(gráfico acá)')
-          ),
-          // Señal
-          React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
-            React.createElement('h2', { className: 'font-semibold mb-2' }, '🚨 Señal'),
-            React.createElement('p', { className: 'text-xl font-bold' },
-              (data.signal === 'VENDER' && '🟢 ') ||
-              (data.signal === 'COMPRAR' && '🔴 ') ||
-              (data.signal === 'ESPERAR' && '🟡 '),
-              data.signal
-            ),
-            React.createElement('p', { className: 'text-sm mt-2' }, `Confianza: ${(data.confidence * 100).toFixed(0)}%`),
-            React.createElement('ul', { className: 'mt-3 text-sm list-disc ml-5' }, data.explanation.map((e, i) => React.createElement('li', { key: i }, e)))
-          )
-        ),
-        // Drivers
-        React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
-          React.createElement('h2', { className: 'font-semibold mb-2' }, '📈 Drivers'),
-          Object.entries(data.drivers).map(([k, v]) => (
-            React.createElement('div', { key: k, className: 'flex justify-between text-sm' },
-              React.createElement('span', null, k),
-              React.createElement('span', null, `${(v * 100).toFixed(0)}%`)
-            )
-          ))
-        )
-      );
     }
 
-    ReactDOM.render(React.createElement(AgroCastDashboard), document.getElementById('root'));
-  </script>
+    const forecastData = generateForecast(data.price, data.trend, data.drivers);
+    const driverEntries = Object.entries(data.drivers).map(([key, value]) => ({ name: key, value: value * 100 }));
+    const news = [
+        { title: 'China aumenta importaciones de soja', impact: 'alcista', summary: 'El crecimiento de la demanda china impulsa los precios de la soja en el mercado internacional.' },
+        { title: 'El petróleo sube un 5% por tensiones geopolíticas', impact: 'alcista', summary: 'El aumento del precio del crudo encarece los costos logísticos, ejerciendo presión alcista sobre los granos.' },
+        { title: 'La Fed mantiene las tasas de interés estables', impact: 'lateral', summary: 'La estabilidad monetaria reduce la volatilidad del dólar, generando un escenario neutro para la soja.' }
+    ];
+
+    return React.createElement('div', { className: 'grid gap-6' },
+        React.createElement('div', { className: 'flex justify-between items-center' },
+            React.createElement('h1', { className: 'text-2xl font-bold' }, '🌱 AgroCast'),
+            React.createElement('div', null,
+                React.createElement('p', { className: 'text-lg' }, 'Soja: ' + data.price.toFixed(2) + ' USD/TN'),
+                React.createElement('p', { className: 'text-sm' }, 'Tendencia: ' + (data.trend === 'alcista' ? '🟢' : data.trend === 'bajista' ? '🔴' : '🟡'))
+            )
+        ),
+        React.createElement('div', { className: 'grid grid-cols-2 gap-6' },
+            React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
+                React.createElement('h2', { className: 'font-semibold mb-2' }, '📊 Precio + Forecast'),
+                React.createElement(LineChart, { width: 500, height: 300, data: forecastData },
+                    React.createElement(XAxis, { dataKey: 'date' }),
+                    React.createElement(YAxis, {}),
+                    React.createElement(Tooltip, null),
+                    React.createElement(Legend, null),
+                    React.createElement(Line, { type: 'monotone', dataKey: 'price', stroke: '#8884d8', name: 'Precio' }),
+                    showDolar ? React.createElement(Line, { type: 'monotone', dataKey: 'dolar', stroke: '#82ca9d', name: 'Dólar' }) : null,
+                    showDiesel ? React.createElement(Line, { type: 'monotone', dataKey: 'diesel', stroke: '#ffc658', name: 'Diesel' }) : null,
+                    showLogistica ? React.createElement(Line, { type: 'monotone', dataKey: 'logistica', stroke: '#ff7300', name: 'Logística' }) : null
+                ),
+                React.createElement('div', { className: 'mt-2 space-x-2 text-sm' },
+                    React.createElement('label', null,
+                        React.createElement('input', { type: 'checkbox', checked: showDolar, onChange: () => setShowDolar(!showDolar) }),
+                        ' Dólar'
+                    ),
+                    React.createElement('label', null,
+                        React.createElement('input', { type: 'checkbox', checked: showDiesel, onChange: () => setShowDiesel(!showDiesel) }),
+                        ' Diesel'
+                    ),
+                    React.createElement('label', null,
+                        React.createElement('input', { type: 'checkbox', checked: showLogistica, onChange: () => setShowLogistica(!showLogistica) }),
+                        ' Logística'
+                    )
+                )
+            ),
+            React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
+                React.createElement('h2', { className: 'font-semibold mb-2' }, '🚨 Señal'),
+                React.createElement('p', { className: 'text-xl font-bold' },
+                    (data.signal === 'VENDER' ? '🟢' : data.signal === 'COMPRAR' ? '🔴' : '🟡') + ' ' + data.signal
+                ),
+                React.createElement('p', { className: 'text-sm mt-2' }, 'Confianza: ' + Math.round(data.confidence * 100) + '%' ),
+                React.createElement('ul', { className: 'mt-3 text-sm list-disc ml-5' },
+                    data.explanation.map((e, i) => React.createElement('li', { key: i }, e))
+                )
+            )
+        ),
+        React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
+            React.createElement('h2', { className: 'font-semibold mb-2' }, '📈 Drivers'),
+            driverEntries.map((d, i) =>
+                React.createElement('div', { key: i, className: 'flex justify-between text-sm' },
+                    React.createElement('span', null, d.name),
+                    React.createElement('span', null, d.value + '%')
+                )
+            )
+        ),
+        React.createElement('div', { className: 'p-4 border rounded-2xl shadow' },
+            React.createElement('h2', { className: 'font-semibold mb-2' }, '📰 Noticias'),
+            news.map((n, i) =>
+                React.createElement('div', { key: i, className: 'mb-2' },
+                    React.createElement('p', { className: 'font-semibold' }, n.title + ' → Impacto: ' + n.impact),
+                    React.createElement('p', { className: 'text-sm text-gray-600' }, n.summary)
+                )
+            )
+        )
+    );
+}
+
+ReactDOM.render(React.createElement(AgroCastDashboard), document.getElementById('root'));
+</script>
 </body>
 </html>
