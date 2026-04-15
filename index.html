@@ -79,7 +79,7 @@ let forecast;
         if (data.forecast && data.forecast.length > 0) {
           forecast = data.forecast.map(item => ({
             date: item.Date || item.date,
-            forecast: item.Forecast_Soybeans || item.forecast || item.price
+            price: item.Forecast_Soybeans || item.forecast || item.price
           }));
         } else {
           forecast = generateForecast(data.price, data.trend);
@@ -89,9 +89,9 @@ let forecast;
 
             data.price = price;
         // Summary
-        document.getElementById('summary').innerHTML =
-          '<p class=\'text-lg\'>Soja: ' + data.price.toFixed(2) + ' USD/TN</p>' +
-          '<p class=\'sm\'>Tendencia: ' getTrendIcon(data.trend) + '</p>';
+       document.getElementById('summary').innerHTML =
+  '<p class=\'text-lg\'>Soja: ' + data.price.toFixed(2) + ' USD/TN</p>' +
+  '<p class=\'sm\'>Tendencia: ' + getTrendIcon(data.trend) + '</p>';
 
         // Signal
         let signalHtml = '<h2 class=\'font-semibold mb-1\'>🚨 Señal</h2>';
